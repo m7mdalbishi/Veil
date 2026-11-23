@@ -1,0 +1,23 @@
+name: Build Veil
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Add keys
+        working-directory: source
+        run: |
+          cp keys.properties.example keys.properties
+          echo "TMDB_KEY=${{ secrets.TMDB_API_KEY }}" >> keys.properties
+      - name: Build
+        working-directory: source
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: veil-apk
+          path: source/app/build/outputs/apk/debug/*.apk
