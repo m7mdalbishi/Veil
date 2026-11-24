@@ -30,6 +30,7 @@
         </intent>
         <package android:name="com.nuvio.tv" />
         <package android:name="com.stremio.one" />
+        <package android:name="app.stremioorigin.tv" />
     </queries>
 
     <application
