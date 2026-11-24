@@ -718,6 +718,7 @@ class LauncherState(private val context: Context, private val scope: CoroutineSc
     enum class Player(val id: String, val title: String, val pkg: String) {
         NUVIO("nuvio", "Nuvio", NUVIO_PKG),
         STREMIO("stremio", "Stremio", STREMIO_PKG),
+        STREMIO_ORIGIN("stremio_origin", "Stremio Origin", STREMIO_ORIGIN_PKG),
     }
 
     var player by mutableStateOf(Player.entries.firstOrNull { it.id == prefs.getString("player", null) } ?: Player.NUVIO)
@@ -738,20 +739,24 @@ class LauncherState(private val context: Context, private val scope: CoroutineSc
 
     /** Opens the item in the chosen player, straight to its streams. */
     fun open(item: WatchItem) {
-        if (effectivePlayer() == Player.STREMIO) openInStremio(item) else openInNuvio(item)
+                when (effectivePlayer()) {
+            Player.NUVIO -> openInNuvio(item)
+            Player.STREMIO -> openInStremio(item, STREMIO_PKG)
+            Player.STREMIO_ORIGIN -> openInStremio(item, STREMIO_ORIGIN_PKG)
+                }
     }
 
     /** stremio:///detail/{type}/{imdb}/{videoId}: the episode's (or movie's) stream list. */
-    private fun openInStremio(item: WatchItem) {
+    private fun openInStremio(item: WatchItem, packageName: String) {
         val imdb = item.imdb
         val uri = when {
             imdb == null -> null
             item.isMovie -> "stremio:///detail/movie/$imdb/$imdb"
             else -> "stremio:///detail/series/$imdb/$imdb:${item.season}:${item.episode}"
         }
-        val i = uri?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)).setPackage(STREMIO_PKG).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+        val i = uri?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)).setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
         if (i == null || !start(i)) {
-            context.packageManager.getLeanbackLaunchIntentForPackage(STREMIO_PKG)?.let {
+            context.packageManager.getLeanbackLaunchIntentForPackage(packageName)?.let {
                 start(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
@@ -797,6 +802,7 @@ class LauncherState(private val context: Context, private val scope: CoroutineSc
         const val NUVIO = "com.nuvio.tv"
         const val NUVIO_PKG = NUVIO
         const val STREMIO_PKG = "com.stremio.one"
+        const val STREMIO_ORIGIN_PKG = "app.stremioorigin.tv"
         val DEFAULT_PINS = listOf(
             "io.gh.reisxd.tizentube.cobalt",
             NUVIO,
